@@ -1,0 +1,15 @@
+{
+  "name": "realtime-weather-updates",
+  "version": "1.0.0",
+  "main": "main.js",
+  "author": "Ryan Jones",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^7.0.0",
+    "request": "^2.88.0",
+    "serverless-dotenv-plugin": "^2.0.1"
+  },
+  "devDependencies": {
+    "aws-sdk": "^2.430.0"
+  }
+}

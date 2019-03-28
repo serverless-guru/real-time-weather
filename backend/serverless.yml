@@ -1,0 +1,54 @@
+service: realtime-weather-updates
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: ${opt:stage, "dev"}
+  region: ${opt:region, "us-west-2"}
+  profile: ${opt:profile, "default"}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+      Resource:
+        Fn::GetAtt:
+          - WeatherTable
+          - Arn
+    - Effect: Allow
+      Action:
+        - iot:*
+      Resource: "*"
+
+functions:
+  main:
+    handler: main.handler
+    events:
+      - schedule: rate(2 minutes)
+  api:
+    handler: api.handler
+    events:
+      - http:
+          path: /api/weather
+          method: GET
+          cors: true
+
+plugins:
+  - serverless-dotenv-plugin
+
+custom:
+  tableName: real-time-weather-data
+
+resources:
+  Resources:
+    WeatherTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        KeySchema:
+          - AttributeName: zip
+            KeyType: HASH
+        AttributeDefinitions:
+          - AttributeName: zip
+            AttributeType: S
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.tableName}
