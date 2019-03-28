@@ -1,68 +1,162 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# Realtime Weather Application with AWS IoT
 
-## Available Scripts
+## What
 
-In the project directory, you can run:
+Creating a realtime weather application with AWS IoT :)
 
-### `npm start`
+## Setup
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Install Dependencies
 
-The page will reload if you make edits.<br>
-You will also see any lint errors in the console.
+```bash
+yarn
+```
 
-### `npm test`
+### Create a .env file
 
-Launches the test runner in the interactive watch mode.<br>
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```bash
+REACT_APP_IDENTITY_POOL_ID='us-west-2:<identity_pool_id>'
+REACT_APP_REGION='us-west-2'
+REACT_APP_USER_POOL_ID='<user_pool_id>'
+REACT_APP_USER_POOL_WEB_CLIENT_ID='<user_pool_app_client_id>'
+REACT_APP_MQTT_ID='<mqtt_id>'
+```
 
-### `npm run build`
+### Start local server
 
-Builds the app for production to the `build` folder.<br>
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+yarn start
+```
 
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
+## Connection with AWS Amplify
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Install Dependencies
 
-### `npm run eject`
+```bash
+yarn add aws-amplify
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+### Copy code into App.js
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```js
+import React, { Component } from 'react';
+import './App.css';
 
-Instead, it will copy all the configuration files and the transitive dependencies (Webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+import Amplify, { PubSub } from 'aws-amplify';
+import { AWSIoTProvider } from '@aws-amplify/pubsub/lib/Providers';
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+Amplify.configure({
+  Auth: {
+    identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID,
+    region: process.env.REACT_APP_REGION,
+    userPoolId: process.env.REACT_APP_USER_POOL_ID,
+    userPoolWebClientId: process.env.REACT_APP_USER_POOL_WEB_CLIENT_ID
+  }
+});
 
-## Learn More
+Amplify.addPluggable(new AWSIoTProvider({
+  aws_pubsub_region: process.env.region,
+  aws_pubsub_endpoint: `wss://${process.env.REACT_APP_MQTT_ID}.iot.${process.env.REACT_APP_REGION}.amazonaws.com/mqtt`,
+}));
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+PubSub.subscribe('real-time-weather').subscribe({
+  next: data => console.log('Message received', data),
+  error: error => console.error(error),
+  close: () => console.log('Done'),
+});
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+class App extends Component {
+  render() {
+    return (
+      <div className="App">
+        <h1>Realtime Weather</h1>
+        <p>Check the console..</p>
+      </div>
+    );
+  }
+}
 
-### Code Splitting
+export default App;
+```
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
+## Connection with aws-iot-sdk
 
-### Analyzing the Bundle Size
+### Install aws-iot-sdk
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
+```bash
+yarn add aws-iot-device-sdk
+```
 
-### Making a Progressive Web App
+### Copy code into App.js
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
+```js
+const AWS = require('aws-sdk');
+const AWSIoTData = require('aws-iot-device-sdk');
 
-### Advanced Configuration
+let awsConfig = {
+  identityPoolId: process.env.REACT_APP_IDENTITY_POOL_ID,
+  mqttEndpoint: `${process.env.REACT_APP_MQTT_ID}.iot.${process.env.REACT_APP_REGION}.amazonaws.com`,
+  region: process.env.REACT_APP_REGION,
+  clientId: process.env.clientId,
+  userPoolId: process.env.REACT_APP_USER_POOL_ID
+};
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
+const mqttClient = AWSIoTData.device({
+  region: awsConfig.region,
+  host: awsConfig.mqttEndpoint,
+  clientId: awsConfig.clientId,
+  protocol: 'wss',
+  maximumReconnectTimeMs: 8000,
+  debug: false,
+  accessKeyId: '',
+  secretKey: '',
+  sessionToken: ''
+});
 
-### Deployment
+AWS.config.region = awsConfig.region;
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
+AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+    IdentityPoolId: awsConfig.identityPoolId
+});
 
-### `npm run build` fails to minify
+AWS.config.credentials.get((err) => {
+    if (err) {
+        console.log(AWS.config.credentials);
+        throw err;
+    } else {
+        mqttClient.updateWebSocketCredentials(
+            AWS.config.credentials.accessKeyId,
+            AWS.config.credentials.secretAccessKey,
+            AWS.config.credentials.sessionToken
+        );
+    }
+});
 
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+mqttClient.on('connect', () => {
+  console.log('mqttClient connected')
+  mqttClient.subscribe('real-time-weather')
+});
+
+mqttClient.on('error', (err) => {
+  console.log('mqttClient error:', err)
+  login()
+});
+
+mqttClient.on('message', (topic, payload) => {
+  const msg = JSON.parse(payload.toString());
+  console.log('mqttClient message: ', msg);
+});
+
+class App extends Component {
+    render() {
+        return (
+            <div className="App">
+                <h1>Realtime Weather</h1>
+                <p>Check the console..</p>
+            </div>
+        );
+    }
+}
+
+export default App;
+```
