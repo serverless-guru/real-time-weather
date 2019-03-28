@@ -1,5 +1,9 @@
 # Realtime Weather Application with AWS IoT
 
+## Live Site
+
+http://real-time-weather-s3-website.s3-website-us-west-2.amazonaws.com/
+
 ## What
 
 Creating a realtime weather application with AWS IoT :)
