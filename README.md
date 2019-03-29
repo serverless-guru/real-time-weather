@@ -55,11 +55,11 @@ Amplify.configure({
 });
 
 Amplify.addPluggable(new AWSIoTProvider({
-  aws_pubsub_region: process.env.region,
+  aws_pubsub_region: process.env.REACT_APP_REGION,
   aws_pubsub_endpoint: `wss://${process.env.REACT_APP_MQTT_ID}.iot.${process.env.REACT_APP_REGION}.amazonaws.com/mqtt`,
 }));
 
-PubSub.subscribe('real-time-weather').subscribe({
+Amplify.PubSub.subscribe('real-time-weather').subscribe({
   next: data => console.log('Message received', data),
   error: error => console.error(error),
   close: () => console.log('Done'),
