@@ -1,0 +1,21 @@
+service: real-time-weather
+
+provider:
+  name: aws
+  runtime: nodejs8.10
+  stage: ${opt:stage, "dev"}
+  region: ${opt:region, "us-west-2"}
+  profile: ${opt:profile, "default"}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+      Resource:
+        Fn::GetAtt:
+          - WeatherTable
+          - Arn
+
+custom: ${file(./resources/custom.yml)}
+functions: ${file(./resources/functions.yml)}
+resources:
+  Resources: ${file(./resources/general.yml)}

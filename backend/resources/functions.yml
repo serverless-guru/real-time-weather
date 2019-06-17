@@ -1,0 +1,10 @@
+api:
+  handler: api.handler
+  events:
+    - http:
+        path: /api/weather
+        method: GET
+        cors: true
+  environment:
+    TABLE_NAME:
+      Ref: WeatherTable

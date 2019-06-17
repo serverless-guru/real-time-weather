@@ -1,0 +1,11 @@
+WeatherTable:
+  Type: AWS::DynamoDB::Table
+  Properties:
+    KeySchema:
+      - AttributeName: zip
+        KeyType: HASH
+    AttributeDefinitions:
+      - AttributeName: zip
+        AttributeType: S
+    BillingMode: PAY_PER_REQUEST
+    TableName: ${self:custom.tableName}
