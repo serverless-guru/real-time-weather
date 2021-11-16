@@ -4,7 +4,7 @@
   "private": true,
   "dependencies": {
     "aws-amplify": "^1.1.22",
-    "aws-sdk": "^2.430.0",
+    "aws-sdk": "^2.814.0",
     "react": "^16.8.4",
     "react-dom": "^16.8.4",
     "react-scripts": "2.1.8",
